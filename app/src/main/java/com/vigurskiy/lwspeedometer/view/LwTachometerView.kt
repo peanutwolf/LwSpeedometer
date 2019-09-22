@@ -1,4 +1,4 @@
-package com.vigurskiy.lwspeedometer
+package com.vigurskiy.lwspeedometer.view
 
 import android.content.Context
 import android.util.AttributeSet
@@ -27,10 +27,10 @@ class LwTachometerView
             ScaleDecorationStrategyCommand.ShortWhiteScale
 
     companion object {
+        const val TACHOMETER_MAX_SPIN = 80
+
         // Angle of speedometer's bottom arc part(half of it)
         private const val TACHOMETER_ARC_ANGLE = 10f
-        private const val TACHOMETER_MAX_SPIN = 80
-
         private const val TACHOMETER_SCALE_LONGS_STEP = 3
         private const val TACHOMETER_SCALE_COUNT = 16
         private const val TACHOMETER_LEGENDS_COUNT = 8

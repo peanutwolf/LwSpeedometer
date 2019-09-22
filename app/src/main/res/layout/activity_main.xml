@@ -8,21 +8,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:keepScreenOn="true"
-    tools:context=".MainActivity">
+    tools:context=".ui.MainActivity">
 
-    <Button
-        android:id="@+id/btn_refresh"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Refresh"
-        android:textColor="@color/colorAccent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <com.vigurskiy.lwspeedometer.LwSpeedometerView
+    <com.vigurskiy.lwspeedometer.view.LwSpeedometerView
         android:id="@+id/lw_speedometer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
         lwindicator:legend_padding = "25dp"
         lwindicator:arrow_color = "@color/colorSpeedometerArrow"
         lwindicator:legend_font = "font/font.ttf"
@@ -32,11 +24,11 @@
         app:layout_constraintBottom_toTopOf="@+id/lw_tachometer"
         />
 
-    <com.vigurskiy.lwspeedometer.LwTachometerView
+    <com.vigurskiy.lwspeedometer.view.LwTachometerView
         android:id="@+id/lw_tachometer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
+
         lwindicator:legend_padding = "30dp"
         lwindicator:arrow_color = "@color/colorTachometerArrow"
         app:layout_constraintTop_toBottomOf="@id/lw_speedometer"
