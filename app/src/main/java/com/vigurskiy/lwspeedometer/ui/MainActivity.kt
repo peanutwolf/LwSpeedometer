@@ -2,7 +2,6 @@ package com.vigurskiy.lwspeedometer.ui
 
 import android.os.Build
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.transition.AutoTransition
 import android.transition.Slide
 import android.transition.TransitionManager
@@ -18,7 +17,7 @@ import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON
 import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON_FLING_UP
 import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetectorImpl
 import com.vigurskiy.lwspeedometer.presenter.MainActivityPresenter
-import com.vigurskiy.lwspeedometer.service.InAppDataSourceServiceConnection
+import com.vigurskiy.lwspeedometer.service.DataSourceServiceConnection
 import com.vigurskiy.lwspeedometer.util.xorVisibility
 import com.vigurskiy.lwspeedometer.view.LwSpeedometerView
 import com.vigurskiy.lwspeedometer.view.LwTachometerView
@@ -31,7 +30,7 @@ class MainActivity : AppCompatActivity(),
     MainActivityPresenter.IndicatorView {
     private val logger = LoggerFactory.getLogger(MainActivity::class.java)
 
-    private lateinit var dateSourceConnection: InAppDataSourceServiceConnection
+    private lateinit var dateSourceConnection: DataSourceServiceConnection
 
     private lateinit var gestureDetector: TwoFingerGestureDetectorImpl
 
@@ -48,7 +47,7 @@ class MainActivity : AppCompatActivity(),
         gestureDetector = TwoFingerGestureDetectorImpl(applicationContext)
         gestureDetector.setOnFlingListener(this)
 
-        dateSourceConnection = InAppDataSourceServiceConnection(this)
+        dateSourceConnection = DataSourceServiceConnection(this)
     }
 
     override fun onResume() {
@@ -60,7 +59,7 @@ class MainActivity : AppCompatActivity(),
 
         mainPresenter.start()
 
-        mainPresenter.onIndicatorMaxValueUpdate(getViewMaxValue())
+        mainPresenter.onIndicatorMaxValueChanged(getViewMaxValue())
     }
 
     override fun onPause() {
@@ -102,7 +101,7 @@ class MainActivity : AppCompatActivity(),
 
         lw_speedometer.xorVisibility(lw_tachometer)
 
-        mainPresenter.onIndicatorMaxValueUpdate(getViewMaxValue())
+        mainPresenter.onIndicatorMaxValueChanged(getViewMaxValue())
     }
 
     private fun getVisibleViewType(): Int =

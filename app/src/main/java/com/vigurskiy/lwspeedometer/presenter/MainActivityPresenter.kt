@@ -1,7 +1,8 @@
 package com.vigurskiy.lwspeedometer.presenter
 
+import android.os.DeadObjectException
 import com.vigurskiy.lwspeedometer.presenter.MainActivityPresenter.MainPresenterCommand.*
-import com.vigurskiy.lwspeedometer.service.InAppDataSourceServiceConnection
+import com.vigurskiy.lwspeedometer.service.DataSourceServiceConnection
 import com.vigurskiy.speedometerdatasource.api.DataSourceService
 import com.vigurskiy.speedometerdatasource.api.OnDataChangeListener
 import kotlinx.coroutines.*
@@ -10,11 +11,16 @@ import org.slf4j.LoggerFactory
 import kotlin.coroutines.CoroutineContext
 
 class MainActivityPresenter(
-    private val dataSourceServiceConnection: InAppDataSourceServiceConnection
+    private val dataSourceServiceConnection: DataSourceServiceConnection
 ) : Presenter, CoroutineScope {
 
     private val actorExceptionHandler = CoroutineExceptionHandler { _, ex ->
         logger.warn("[actorExceptionHandler] Sorry, something unexpected has happened:\n{}", ex)
+
+        if(ex is DeadObjectException){
+            //looks like the hosting process is done
+            dataSourceService = null
+        }
     }
 
     override val coroutineContext: CoroutineContext =
@@ -68,8 +74,10 @@ class MainActivityPresenter(
         coroutineContext.cancel()
     }
 
-    fun onIndicatorMaxValueUpdate(indicatorMaxValue: Float) = runBlocking {
-        mainPresenterActor.send(SubscribeDataSource(indicatorMaxValue))
+    fun onIndicatorMaxValueChanged(indicatorMaxValue: Float) = runBlocking {
+        if(!mainPresenterActor.isClosedForSend){
+            mainPresenterActor.send(SubscribeDataSource(indicatorMaxValue))
+        }
     }
 
     private suspend fun connectDataSource() {
@@ -110,7 +118,6 @@ class MainActivityPresenter(
             }
         }
     }
-
 
     private inner class OnDataChangeListenerImpl : OnDataChangeListener.Stub() {
         override fun onDataChange(data: Float) {

@@ -14,7 +14,6 @@
         android:id="@+id/lw_speedometer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
         lwindicator:legend_padding = "25dp"
         lwindicator:arrow_color = "@color/colorSpeedometerArrow"
         lwindicator:legend_font = "font/font.ttf"
@@ -28,7 +27,7 @@
         android:id="@+id/lw_tachometer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-
+        android:visibility="gone"
         lwindicator:legend_padding = "30dp"
         lwindicator:arrow_color = "@color/colorTachometerArrow"
         app:layout_constraintTop_toBottomOf="@id/lw_speedometer"

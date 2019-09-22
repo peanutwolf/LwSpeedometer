@@ -9,10 +9,12 @@ import com.vigurskiy.lwspeedometer.R
 import com.vigurskiy.lwspeedometer.util.degreeToRadian
 import com.vigurskiy.lwspeedometer.util.resize
 import com.vigurskiy.lwspeedometer.view.LwRoundedArrowIndicatorView.ScaleDecorationStrategyCommand.*
+import org.slf4j.LoggerFactory
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+
 
 abstract class LwRoundedArrowIndicatorView
 @JvmOverloads constructor(
@@ -34,6 +36,8 @@ abstract class LwRoundedArrowIndicatorView
     protected abstract val indicatorScaleCount: Int
 
     protected abstract val indicatorLegendsCount: Int
+
+    private val logger = LoggerFactory.getLogger(LwRoundedArrowIndicatorView::class.java)
 
     private val ovalStartAngle: Float get() = indicatorArcAngle
     private val ovalEndAngle: Float get() = -(180f + indicatorArcAngle * 2)
@@ -82,7 +86,11 @@ abstract class LwRoundedArrowIndicatorView
 
                 typedArray.getString(R.styleable.LwRoundedArrowIndicator_legend_font)
                     ?.also { fontName ->
-                        legendTypeface = Typeface.createFromAsset(context.assets, fontName)
+                        try {
+                            legendTypeface = Typeface.createFromAsset(context.assets, fontName)
+                        } catch (ex: RuntimeException) {
+                            // looks like external font is missing
+                        }
                     }
             }
     }
@@ -93,38 +101,31 @@ abstract class LwRoundedArrowIndicatorView
         paintDebug.style = Paint.Style.STROKE
 
         ovalPaint.color = Color.BLUE
-        ovalPaint.strokeWidth =
-            OVAL_STROKE_WIDTH
+        ovalPaint.strokeWidth = OVAL_STROKE_WIDTH
         ovalPaint.style = Paint.Style.STROKE
 
         arrowPaint.color = indicatorArrowColor
-        arrowPaint.strokeWidth =
-            INDICATOR_STROKE_WIDTH
+        arrowPaint.strokeWidth = INDICATOR_STROKE_WIDTH
         arrowPaint.style = Paint.Style.FILL
 
         scaleShortsWhitePaint.color = Color.WHITE
-        scaleShortsWhitePaint.strokeWidth =
-            SCALE_SHORTS_STROKE_WIDTH
+        scaleShortsWhitePaint.strokeWidth = SCALE_SHORTS_STROKE_WIDTH
         scaleShortsWhitePaint.style = Paint.Style.STROKE
 
         scaleShortsRedPaint.color = Color.RED
-        scaleShortsRedPaint.strokeWidth =
-            SCALE_SHORTS_STROKE_WIDTH
+        scaleShortsRedPaint.strokeWidth = SCALE_SHORTS_STROKE_WIDTH
         scaleShortsRedPaint.style = Paint.Style.STROKE
 
         scaleLongsWhitePaint.color = Color.WHITE
-        scaleLongsWhitePaint.strokeWidth =
-            SCALE_LONGS_STROKE_WIDTH
+        scaleLongsWhitePaint.strokeWidth = SCALE_LONGS_STROKE_WIDTH
         scaleLongsWhitePaint.style = Paint.Style.STROKE
 
         scaleLongsRedPaint.color = Color.RED
-        scaleLongsRedPaint.strokeWidth =
-            SCALE_LONGS_STROKE_WIDTH
+        scaleLongsRedPaint.strokeWidth = SCALE_LONGS_STROKE_WIDTH
         scaleLongsRedPaint.style = Paint.Style.STROKE
 
 
-        legendPaint.textSize =
-            SPEEDOMETER_LEGEND_TEXT_SIZE
+        legendPaint.textSize = SPEEDOMETER_LEGEND_TEXT_SIZE
         legendPaint.typeface = legendTypeface
         legendPaint.setShadowLayer(5f, 0f, 0f, Color.RED)
         legendPaint.color = Color.WHITE
@@ -133,8 +134,38 @@ abstract class LwRoundedArrowIndicatorView
     protected abstract fun treatScale(scaleIndex: Int): ScaleDecorationStrategyCommand
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        //TODO support correct measurement(e.g. wrap_content)
+        logger.debug("[onMeasure] widthMeasureSpec=[{}]", MeasureSpec.toString(widthMeasureSpec))
+        logger.debug("[onMeasure] heightMeasureSpec=[{}]", MeasureSpec.toString(heightMeasureSpec))
+
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+        val heightSize = MeasureSpec.getSize(heightMeasureSpec)
+        val widthSizeF = widthSize.toFloat()
+        val heightSizeF = heightSize.toFloat()
+
+        val drawArea = createDrawAreaRectF(
+            widthSizeF,
+            heightSizeF,
+            indicatorArcAngle
+        )
+
+        val drawAreaWidth = drawArea.width().toInt()
+        val drawAreaHeight = drawArea.height().toInt()
+
+        val width = when (widthMode) {
+            MeasureSpec.EXACTLY -> widthSize
+            MeasureSpec.AT_MOST -> min(drawAreaWidth, widthSize)
+            else -> drawAreaWidth
+        }
+
+        val height = when (heightMode) {
+            MeasureSpec.EXACTLY -> heightSize
+            MeasureSpec.AT_MOST -> min(drawAreaHeight, heightSize)
+            else -> drawAreaHeight
+        }
+
+        setMeasuredDimension(width, height)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

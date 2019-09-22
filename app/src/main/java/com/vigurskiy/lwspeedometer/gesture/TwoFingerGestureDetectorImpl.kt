@@ -84,7 +84,7 @@ class TwoFingerGestureDetectorImpl(
             gestureSequence[sequenceIndex].whatNext(event)
                 .also { nextState ->
 
-                    logger.debug("[onNextEvent] e=[{}], nextState=[{}]", event, nextState)
+//                    logger.debug("[onNextEvent] e=[{}], nextState=[{}]", event, nextState)
 
                     state = nextState
 
