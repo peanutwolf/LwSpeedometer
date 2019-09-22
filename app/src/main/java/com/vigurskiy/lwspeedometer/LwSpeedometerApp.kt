@@ -9,7 +9,7 @@ class LwSpeedometerApp : Application(){
     override fun onCreate() {
         super.onCreate()
 
-        TinyDancer.create().show(applicationContext)
+//        TinyDancer.create().show(applicationContext)
 
     }
 }
