@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:lwindicator="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/btn_refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Refresh"
+        android:textColor="@color/colorAccent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.vigurskiy.lwspeedometer.LwSpeedometerView
+        android:id="@+id/lw_speedometer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        lwindicator:legend_padding = "25dp"
+        lwindicator:arrow_color = "@color/colorSpeedometerArrow"
+        lwindicator:legend_font = "font/font.ttf"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/lw_tachometer"
+        />
+
+    <com.vigurskiy.lwspeedometer.LwTachometerView
+        android:id="@+id/lw_tachometer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        lwindicator:legend_padding = "30dp"
+        lwindicator:arrow_color = "@color/colorTachometerArrow"
+        app:layout_constraintTop_toBottomOf="@id/lw_speedometer"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+         />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

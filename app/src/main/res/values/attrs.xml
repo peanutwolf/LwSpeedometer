@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LwRoundedArrowIndicator">
+        <attr name="legend_padding" format="dimension" />
+        <attr name="legend_font" format="string"/>
+        <attr name="arrow_color" format="color"/>
+    </declare-styleable>
+</resources>
