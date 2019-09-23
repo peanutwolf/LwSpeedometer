@@ -7,6 +7,7 @@ import android.transition.Slide
 import android.transition.TransitionManager
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.vigurskiy.lwspeedometer.R
@@ -22,7 +23,11 @@ import com.vigurskiy.lwspeedometer.util.xorVisibility
 import com.vigurskiy.lwspeedometer.view.LwSpeedometerView
 import com.vigurskiy.lwspeedometer.view.LwTachometerView
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
+
+
+
 
 
 class MainActivity : AppCompatActivity(),
@@ -48,10 +53,13 @@ class MainActivity : AppCompatActivity(),
         gestureDetector.setOnFlingListener(this)
 
         dateSourceConnection = DataSourceServiceConnection(this)
+
     }
 
     override fun onResume() {
         super.onResume()
+
+        hideNavButtons()
 
         mainPresenter = MainActivityPresenter(dateSourceConnection).also {
             it.indicatorView = this
@@ -67,7 +75,7 @@ class MainActivity : AppCompatActivity(),
 
         mainPresenter.stop()
     }
-
+    
     override fun onSaveInstanceState(outState: Bundle) {
         outState.run {
             putInt(VIEW_TYPE_KEY, getVisibleViewType())
@@ -133,6 +141,17 @@ class MainActivity : AppCompatActivity(),
             SPEEDOMETER_TYPE_KEY -> lw_speedometer.currentValue = value
             else -> lw_tachometer.currentValue = value
         }
+
+    private fun hideNavButtons(){
+        window.decorView.apply {
+            systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        }
+    }
 
     companion object{
         private const val VIEW_TYPE_KEY = "VIEW_TYPE_KEY"
