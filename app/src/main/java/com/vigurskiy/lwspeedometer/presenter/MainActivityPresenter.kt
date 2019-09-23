@@ -6,10 +6,13 @@ import com.vigurskiy.lwspeedometer.service.DataSourceServiceConnection
 import com.vigurskiy.speedometerdatasource.api.DataSourceService
 import com.vigurskiy.speedometerdatasource.api.OnDataChangeListener
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ActorScope
 import kotlinx.coroutines.channels.actor
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.CoroutineContext
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
 class MainActivityPresenter(
     private val dataSourceServiceConnection: DataSourceServiceConnection
 ) : Presenter, CoroutineScope {
@@ -36,17 +39,11 @@ class MainActivityPresenter(
 
     private var dataSourceService: DataSourceService? = null
 
-    private val mainPresenterActor = actor<MainPresenterCommand>(capacity = 10) {
-        for (command in channel) {
-            when (command) {
-                is ConnectDataSourceService -> connectDataSource()
-                is SubscribeDataSource -> subscribeDataSource(command.maxValue)
-                is UpdateIndicatorView -> updateIndicatorView(command.withValue)
-                is UnsubscribeDataSource -> unsubscribeDataSource()
-                is DisconnectDataSourceService -> disconnectDataSource(command.completable)
-            }
-        }
-    }
+    private val mainPresenterActor = actor(
+        capacity = 10,
+        block = ::actorBlock
+    )
+
 
     override fun start() {
         dispatchingJob = launch {
@@ -80,25 +77,28 @@ class MainActivityPresenter(
         }
     }
 
-    private suspend fun connectDataSource() {
-        dataSourceService = dataSourceServiceConnection.connect()
-    }
+    private suspend fun actorBlock(scope: ActorScope<MainPresenterCommand>){
+        for (command in scope) {
+            when (command) {
 
-    private suspend fun subscribeDataSource(maxValue: Float) {
-        dataSourceService?.provideData(maxValue, OnDataChangeListenerImpl())
-    }
+                is ConnectDataSourceService -> {
+                    dataSourceService = dataSourceServiceConnection.connect()
+                }
 
-    private suspend fun updateIndicatorView(withValue: Float) = withContext(Dispatchers.Main) {
-        indicatorView?.updateIndicatorValue(withValue)
-    }
+                is SubscribeDataSource -> {
+                    dataSourceService?.provideData(command.maxValue, OnDataChangeListenerImpl())
+                }
 
-    private suspend fun unsubscribeDataSource() {
-        dataSourceService?.provideData(0f, null)
-    }
+                is UnsubscribeDataSource -> {
+                    dataSourceService?.provideData(0f, null)
+                }
 
-    private suspend fun disconnectDataSource(completable: CompletableDeferred<Unit>) {
-        dataSourceServiceConnection.disconnect()
-        completable.complete(Unit)
+                is DisconnectDataSourceService -> {
+                    dataSourceServiceConnection.disconnect()
+                    command.completable.complete(Unit)
+                }
+            }
+        }
     }
 
     private suspend fun CoroutineScope.loopDispatchingJob() {
@@ -141,8 +141,6 @@ class MainActivityPresenter(
         class SubscribeDataSource(val maxValue: Float) : MainPresenterCommand()
 
         object UnsubscribeDataSource : MainPresenterCommand()
-
-        class UpdateIndicatorView(val withValue: Float) : MainPresenterCommand()
 
     }
 }
