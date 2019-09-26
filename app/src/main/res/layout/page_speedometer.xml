@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:lwindicator="http://schemas.android.com/apk/res-auto"
+    android:tag="@string/tag_page_speedometer"
+    android:orientation="vertical"
+    android:background="@android:color/background_dark"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.vigurskiy.lwspeedometer.view.LwSpeedometerView
+        android:id="@+id/lw_speedometer"
+        android:tag="@string/tag_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        lwindicator:legend_padding = "25dp"
+        lwindicator:arrow_color = "@color/colorSpeedometerArrow"
+        lwindicator:legend_font = "font/font.ttf"
+        />
+
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:lwindicator="http://schemas.android.com/apk/res-auto"
+    android:tag="@string/tag_page_tachometer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark"
+    android:orientation="vertical">
+
+    <com.vigurskiy.lwspeedometer.view.LwTachometerView
+        android:id="@+id/lw_tachometer"
+        android:tag="@string/tag_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        lwindicator:arrow_color="@color/colorTachometerArrow"
+        lwindicator:legend_padding="30dp" />
+
+</LinearLayout>

@@ -1,43 +1,34 @@
 package com.vigurskiy.lwspeedometer.ui
 
-import android.os.Build
 import android.os.Bundle
-import android.transition.AutoTransition
-import android.transition.Slide
-import android.transition.TransitionManager
-import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import com.vigurskiy.lwspeedometer.R
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON_FLING_DOWN
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON_FLING_LEFT
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON_FLING_RIGHT
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetector.Companion.ON_FLING_UP
-import com.vigurskiy.lwspeedometer.gesture.TwoFingerGestureDetectorImpl
 import com.vigurskiy.lwspeedometer.presenter.MainActivityPresenter
 import com.vigurskiy.lwspeedometer.service.DataSourceServiceConnection
-import com.vigurskiy.lwspeedometer.util.xorVisibility
-import com.vigurskiy.lwspeedometer.view.LwSpeedometerView
-import com.vigurskiy.lwspeedometer.view.LwTachometerView
+import com.vigurskiy.speedometerdatasource.api.DataSourceService
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import org.slf4j.LoggerFactory
+import kotlin.coroutines.CoroutineContext
 
 
+class MainActivity :
+    AppCompatActivity(),
+    CoroutineScope,
+    MainActivityPresenter.IndicatorView,
+    DashboardViewPager.OnMaxValueChangedListener,
+    DataSourceServiceConnection.ConnectionListener
+{
 
+    override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.Main
 
-
-class MainActivity : AppCompatActivity(),
-    TwoFingerGestureDetector.OnFlingListener,
-    MainActivityPresenter.IndicatorView {
     private val logger = LoggerFactory.getLogger(MainActivity::class.java)
 
     private lateinit var dateSourceConnection: DataSourceServiceConnection
-
-    private lateinit var gestureDetector: TwoFingerGestureDetectorImpl
 
     private lateinit var mainPresenter: MainActivityPresenter
 
@@ -45,15 +36,22 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        savedInstanceState?.apply {
-            setVisibleViewType(getInt(VIEW_TYPE_KEY))
+        mainPresenter = MainActivityPresenter(this).apply {
+            start()
         }
 
-        gestureDetector = TwoFingerGestureDetectorImpl(applicationContext)
-        gestureDetector.setOnFlingListener(this)
+        vp_dashboard.onMaxValueChangedListener = this
+        vp_dashboard.initDashboard()
 
-        dateSourceConnection = DataSourceServiceConnection(this)
+        dateSourceConnection = DataSourceServiceConnection(this, this).apply {
+            connect()
+        }
 
+        window.decorView.setOnSystemUiVisibilityChangeListener { visibility ->
+            if (visibility and View.SYSTEM_UI_FLAG_FULLSCREEN == 0) {
+                hideNavButtons()
+            }
+        }
     }
 
     override fun onResume() {
@@ -61,88 +59,43 @@ class MainActivity : AppCompatActivity(),
 
         hideNavButtons()
 
-        mainPresenter = MainActivityPresenter(dateSourceConnection).also {
-            it.indicatorView = this
-        }
-
-        mainPresenter.start()
-
-        mainPresenter.onIndicatorMaxValueChanged(getViewMaxValue())
+        mainPresenter.indicatorView = this
     }
 
     override fun onPause() {
         super.onPause()
 
+        mainPresenter.indicatorView = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        vp_dashboard.clearDashboard()
+
+        dateSourceConnection.disconnect()
+
         mainPresenter.stop()
-    }
-    
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.run {
-            putInt(VIEW_TYPE_KEY, getVisibleViewType())
-        }
-        super.onSaveInstanceState(outState)
+
+        coroutineContext.cancel()
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        gestureDetector.onTouchEvent(event)
-        return super.onTouchEvent(event)
-    }
+    override fun onDataSourceConnected(dataSource: DataSourceService) =
+        mainPresenter.onDataSourceBound(dataSource)
 
-    override fun updateIndicatorValue(value: Float) = setViewValue(value)
+    override fun onDataSourceConnectionFailed() =
+        logger.trace("[onDataSourceConnectionFailed] todo: init reconnection")
 
-    override fun onFling(flingDirection: Int) {
+    override fun onDataSourceDisconnected() =
+        mainPresenter.onDataSourceUnbound()
 
-        fun Int.toSlideEdge(): Int =
-            when (this) {
-                ON_FLING_UP -> Gravity.TOP
-                ON_FLING_DOWN -> Gravity.BOTTOM
-                ON_FLING_LEFT -> Gravity.START
-                ON_FLING_RIGHT -> Gravity.END
-                else -> Gravity.BOTTOM
-            }
+    override fun onMaxValueChanged(value: Float) =
+        mainPresenter.onIndicatorMaxValueChanged(value)
 
-        val transition = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            Slide(flingDirection.toSlideEdge())
-        else AutoTransition()
+    override fun updateIndicatorValue(value: Float) =
+        vp_dashboard.updateIndicatorValue(value)
 
-        TransitionManager.beginDelayedTransition(main_layout, transition)
-
-        lw_speedometer.xorVisibility(lw_tachometer)
-
-        mainPresenter.onIndicatorMaxValueChanged(getViewMaxValue())
-    }
-
-    private fun getVisibleViewType(): Int =
-        when {
-            lw_speedometer.isVisible -> SPEEDOMETER_TYPE_KEY
-            else -> TACHOMETER_TYPE_KEY
-        }
-
-    private fun setVisibleViewType(viewType: Int) =
-        when(viewType){
-            SPEEDOMETER_TYPE_KEY -> {
-                lw_speedometer.isVisible = true
-                lw_tachometer.isVisible = false
-            }
-            else -> {
-                lw_speedometer.isVisible = false
-                lw_tachometer.isVisible = true
-            }
-        }
-
-    private fun getViewMaxValue(): Float =
-        when(getVisibleViewType()){
-            SPEEDOMETER_TYPE_KEY -> LwSpeedometerView.SPEEDOMETER_MAX_SPEED
-            else -> LwTachometerView.TACHOMETER_MAX_SPIN
-        }.run { toFloat() }
-
-    private fun setViewValue(value: Float) =
-        when(getVisibleViewType()){
-            SPEEDOMETER_TYPE_KEY -> lw_speedometer.currentValue = value
-            else -> lw_tachometer.currentValue = value
-        }
-
-    private fun hideNavButtons(){
+    private fun hideNavButtons() {
         window.decorView.apply {
             systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -151,13 +104,6 @@ class MainActivity : AppCompatActivity(),
                     or View.SYSTEM_UI_FLAG_FULLSCREEN
                     or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         }
-    }
-
-    companion object{
-        private const val VIEW_TYPE_KEY = "VIEW_TYPE_KEY"
-
-        private const val SPEEDOMETER_TYPE_KEY = 0
-        private const val TACHOMETER_TYPE_KEY = 1
     }
 
 }

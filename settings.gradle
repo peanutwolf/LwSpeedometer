@@ -1,2 +1,2 @@
-include ':app', ':speedometerdatasource-api', ':speedometerdatasource-mock'
+include ':app', ':speedometerdatasource-api', ':speedometerdatasource-mock', ':speedometerdatasource-external'
 rootProject.name='LwSpeedometer'

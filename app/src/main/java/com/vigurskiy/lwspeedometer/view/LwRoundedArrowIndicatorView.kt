@@ -1,15 +1,16 @@
 package com.vigurskiy.lwspeedometer.view
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.LinearInterpolator
 import androidx.core.content.res.use
 import com.vigurskiy.lwspeedometer.R
 import com.vigurskiy.lwspeedometer.util.degreeToRadian
 import com.vigurskiy.lwspeedometer.util.resize
 import com.vigurskiy.lwspeedometer.view.LwRoundedArrowIndicatorView.ScaleDecorationStrategyCommand.*
-import org.slf4j.LoggerFactory
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
@@ -25,8 +26,12 @@ abstract class LwRoundedArrowIndicatorView
 
     var currentValue: Float = 0f
         set(value) {
-            field = value
-            invalidate()
+            arrowAnimator.cancel()
+            arrowAnimator.setFloatValues(
+                currentInterpolatedValue lowPassFilter value,
+                value
+            )
+            arrowAnimator.start()
         }
 
     protected abstract val indicatorArcAngle: Float
@@ -37,20 +42,26 @@ abstract class LwRoundedArrowIndicatorView
 
     protected abstract val indicatorLegendsCount: Int
 
-    private val logger = LoggerFactory.getLogger(LwRoundedArrowIndicatorView::class.java)
-
     private val ovalStartAngle: Float get() = indicatorArcAngle
-    private val ovalEndAngle: Float get() = -(180f + indicatorArcAngle * 2)
+    private val ovalEndAngle: Float get() = -(PERIOD_180_DEGREE + indicatorArcAngle * 2)
 
     private val scaleStartAngle: Float get() = indicatorArcAngle
-    private val scaleEndAngle: Float get() = -(180f + indicatorArcAngle)
+    private val scaleEndAngle: Float get() = -(PERIOD_180_DEGREE + indicatorArcAngle)
 
-    private val legendStartAngle: Float get() = -(180f + indicatorArcAngle)
+    private val legendStartAngle: Float get() = -(PERIOD_180_DEGREE + indicatorArcAngle)
     private val legendEndAngle: Float get() = indicatorArcAngle
 
     private val indicatorMaxValueF by lazy { indicatorMaxValue.toFloat() }
 
-    private val paintDebug: Paint = Paint()
+    private val arrowAnimator = ValueAnimator().also {
+        it.interpolator = LinearInterpolator()
+        it.duration = INDICATOR_FULL_INTERPOLATION_DURATION
+        it.addUpdateListener { animation ->
+            currentInterpolatedValue = animation.animatedValue as Float
+            invalidate()
+        }
+    }
+
     private val ovalPaint: Paint = Paint()
     private val arrowPaint: Paint = Paint()
     private val scaleShortsWhitePaint: Paint = Paint()
@@ -59,19 +70,16 @@ abstract class LwRoundedArrowIndicatorView
     private val scaleLongsRedPaint: Paint = Paint()
     private val legendPaint: Paint = Paint()
 
-    private var legendPadding: Float =
-        SPEEDOMETER_LEGEND_TEXT_OFFSET
+    private var legendPadding: Float = SPEEDOMETER_LEGEND_TEXT_OFFSET
     private var legendTypeface: Typeface = Typeface.MONOSPACE
-    private var indicatorArrowColor: Int =
-        INDICATOR_ARROW_COLOR
+    private var indicatorArrowColor: Int = INDICATOR_ARROW_COLOR
 
     private var indicatorViewData: IndicatorViewDrawData? = null
 
+    private var currentInterpolatedValue = 0f
+
     init {
-        context.theme.obtainStyledAttributes(
-            attrs,
-            R.styleable.LwRoundedArrowIndicator, 0, 0
-        )
+        context.theme.obtainStyledAttributes(attrs, R.styleable.LwRoundedArrowIndicator, 0, 0)
             .use { typedArray ->
 
                 indicatorArrowColor = typedArray.getColor(
@@ -96,47 +104,46 @@ abstract class LwRoundedArrowIndicatorView
     }
 
     init {
-        paintDebug.color = Color.RED
-        paintDebug.strokeWidth = 1f
-        paintDebug.style = Paint.Style.STROKE
-
         ovalPaint.color = Color.BLUE
         ovalPaint.strokeWidth = OVAL_STROKE_WIDTH
         ovalPaint.style = Paint.Style.STROKE
+        ovalPaint.isAntiAlias = true
 
         arrowPaint.color = indicatorArrowColor
         arrowPaint.strokeWidth = INDICATOR_STROKE_WIDTH
         arrowPaint.style = Paint.Style.FILL
+        arrowPaint.isAntiAlias = true
 
         scaleShortsWhitePaint.color = Color.WHITE
         scaleShortsWhitePaint.strokeWidth = SCALE_SHORTS_STROKE_WIDTH
         scaleShortsWhitePaint.style = Paint.Style.STROKE
+        scaleShortsWhitePaint.isAntiAlias = true
 
         scaleShortsRedPaint.color = Color.RED
         scaleShortsRedPaint.strokeWidth = SCALE_SHORTS_STROKE_WIDTH
         scaleShortsRedPaint.style = Paint.Style.STROKE
+        scaleShortsRedPaint.isAntiAlias = true
 
         scaleLongsWhitePaint.color = Color.WHITE
         scaleLongsWhitePaint.strokeWidth = SCALE_LONGS_STROKE_WIDTH
         scaleLongsWhitePaint.style = Paint.Style.STROKE
+        scaleLongsWhitePaint.isAntiAlias = true
 
         scaleLongsRedPaint.color = Color.RED
         scaleLongsRedPaint.strokeWidth = SCALE_LONGS_STROKE_WIDTH
         scaleLongsRedPaint.style = Paint.Style.STROKE
-
+        scaleLongsRedPaint.isAntiAlias = true
 
         legendPaint.textSize = SPEEDOMETER_LEGEND_TEXT_SIZE
         legendPaint.typeface = legendTypeface
         legendPaint.setShadowLayer(5f, 0f, 0f, Color.RED)
         legendPaint.color = Color.WHITE
+        legendPaint.isAntiAlias = true
     }
 
     protected abstract fun treatScale(scaleIndex: Int): ScaleDecorationStrategyCommand
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        logger.debug("[onMeasure] widthMeasureSpec=[{}]", MeasureSpec.toString(widthMeasureSpec))
-        logger.debug("[onMeasure] heightMeasureSpec=[{}]", MeasureSpec.toString(heightMeasureSpec))
-
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightMode = MeasureSpec.getMode(heightMeasureSpec)
@@ -188,17 +195,17 @@ abstract class LwRoundedArrowIndicatorView
             drawPath(dataToDraw.ovalPath, ovalPaint)
 
             dataToDraw.legendData.forEach {
-                canvas.drawText(it.text, it.xPos, it.yPos, legendPaint)
+                drawText(it.text, it.xPos, it.yPos, legendPaint)
             }
 
-            canvas.save()
-            canvas.rotate(
-                currentValue.valueToAngle(),
+            save()
+            rotate(
+                currentInterpolatedValue.valueToAngle(),
                 dataToDraw.drawArea.centerX(),
                 dataToDraw.drawArea.centerY()
             )
-            canvas.drawPath(dataToDraw.arrowPath, arrowPaint)
-            canvas.restore()
+            drawPath(dataToDraw.arrowPath, arrowPaint)
+            restore()
         }
 
     }
@@ -228,7 +235,7 @@ abstract class LwRoundedArrowIndicatorView
     private fun calcArcBias(rectSide: Float, viewWidth: Float, arcDegree: Float): Float {
         val hypotenuse = rectSide / 2
 
-        val cathetus = hypotenuse * cos((90f - arcDegree).degreeToRadian())
+        val cathetus = hypotenuse * cos((PERIOD_90_DEGREE - arcDegree).degreeToRadian())
         val bias = hypotenuse - cathetus
 
         //In case we can grow in width
@@ -288,35 +295,35 @@ abstract class LwRoundedArrowIndicatorView
 
         var startAngleCounter = scaleStartAngle
         for (i in 0..indicatorScaleCount) {
-            val startAngle = startAngleCounter - SPEEDOMETER_SCALE_WIDTH / 2
+            val startAngle = startAngleCounter - INDICATOR_SCALE_WIDTH / 2
 
             treatScale(i).also { decoration ->
                 when (decoration) {
                     is LongColoredScale -> {
                         scaleLongsColoredPath.addArc(
                             scaleRectHolder.longsRect, startAngle,
-                            SPEEDOMETER_SCALE_WIDTH
+                            INDICATOR_SCALE_WIDTH
                         )
                     }
 
                     LongWhiteScale -> {
                         scaleLongsWhitePath.addArc(
                             scaleRectHolder.longsRect, startAngle,
-                            SPEEDOMETER_SCALE_WIDTH
+                            INDICATOR_SCALE_WIDTH
                         )
                     }
 
                     ShortColoredScale -> {
                         scaleShortsColoredPath.addArc(
                             scaleRectHolder.shortsRect, startAngle,
-                            SPEEDOMETER_SCALE_WIDTH
+                            INDICATOR_SCALE_WIDTH
                         )
                     }
 
                     ShortWhiteScale -> {
                         scaleShortsWhitePath.addArc(
                             scaleRectHolder.shortsRect, startAngle,
-                            SPEEDOMETER_SCALE_WIDTH
+                            INDICATOR_SCALE_WIDTH
                         )
                     }
                 }
@@ -399,9 +406,12 @@ abstract class LwRoundedArrowIndicatorView
 
         val step = (abs(scaleStartAngle) + abs(scaleEndAngle)) / indicatorMaxValue
 
-        return -90f - indicatorArcAngle + step * value
+        return -PERIOD_90_DEGREE - indicatorArcAngle + step * value
 
     }
+
+    private infix fun Float.lowPassFilter(newValue: Float): Float =
+        this + (newValue - this)/ LOWPASS_FILTER_COEFFICIENT
 
     protected sealed class ScaleDecorationStrategyCommand {
         object ShortWhiteScale : ScaleDecorationStrategyCommand()
@@ -438,7 +448,10 @@ abstract class LwRoundedArrowIndicatorView
 
     companion object {
 
-        private const val SPEEDOMETER_SCALE_WIDTH = 1f
+        private const val INDICATOR_SCALE_WIDTH = 1f
+
+        private const val INDICATOR_FULL_INTERPOLATION_DURATION = 1_000L
+        private const val LOWPASS_FILTER_COEFFICIENT = 50
 
         private const val INDICATOR_ARROW_COLOR = Color.GREEN
         private const val SPEEDOMETER_LEGEND_TEXT_OFFSET = 50f
@@ -450,5 +463,8 @@ abstract class LwRoundedArrowIndicatorView
         private const val INDICATOR_STROKE_WIDTH = 1f
         private const val SCALE_SHORTS_STROKE_WIDTH = 25f
         private const val SCALE_LONGS_STROKE_WIDTH = 50f
+
+        private const val PERIOD_180_DEGREE = 180f
+        private const val PERIOD_90_DEGREE = 90f
     }
 }

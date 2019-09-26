@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">LwSpeedometer</string>
+
+    <string name="tag_page_speedometer">tag_page_speedometer</string>
+    <string name="tag_page_tachometer">tag_page_tachometer</string>
+
+    <string name="tag_indicator">tag_indicator</string>
 </resources>

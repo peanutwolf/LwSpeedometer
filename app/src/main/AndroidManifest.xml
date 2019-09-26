@@ -29,6 +29,15 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name="com.vigurskiy.speedometerdatasource.external.ExternalDataSourceService"
+            android:process=":external_data"
+            >
+            <intent-filter>
+                <action android:name="com.vigurskiy.speedometerdatasource.external.SERVICE"/>
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
