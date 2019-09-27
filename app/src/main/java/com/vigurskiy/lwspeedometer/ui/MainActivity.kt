@@ -72,6 +72,7 @@ class MainActivity :
         super.onDestroy()
 
         vp_dashboard.clearDashboard()
+        vp_dashboard.onMaxValueChangedListener = null
 
         dateSourceConnection.disconnect()
 

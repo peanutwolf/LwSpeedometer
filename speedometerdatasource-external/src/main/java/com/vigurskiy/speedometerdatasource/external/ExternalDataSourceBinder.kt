@@ -60,8 +60,8 @@ class ExternalDataSourceBinder(
     }
 
     companion object {
-        private const val GENERATION_STEP = 20f
-        private const val GENERATION_DELAY = 600L
+        private const val GENERATION_STEP = 10f
+        private const val GENERATION_DELAY = 100L
         private const val GENERATION_SIN_KOEFF1 = 500
         private const val GENERATION_SIN_KOEFF2 = 300
     }

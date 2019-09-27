@@ -19,9 +19,9 @@ class LwTachometerView
     override val indicatorLegendsCount: Int = TACHOMETER_LEGENDS_COUNT
 
     override fun treatScale(scaleIndex: Int): ScaleDecorationStrategyCommand =
-        if (scaleIndex < 7 && scaleIndex % TACHOMETER_SCALE_LONGS_STEP == 0)
+        if (scaleIndex < TACHOMETER_SCALE_COLORED_COUNT && scaleIndex % TACHOMETER_SCALE_LONGS_STEP == 0)
             ScaleDecorationStrategyCommand.LongColoredScale
-        else if (scaleIndex < 7)
+        else if (scaleIndex < TACHOMETER_SCALE_COLORED_COUNT)
             ScaleDecorationStrategyCommand.ShortColoredScale
         else
             ScaleDecorationStrategyCommand.ShortWhiteScale
@@ -33,6 +33,7 @@ class LwTachometerView
         private const val TACHOMETER_ARC_ANGLE = 25f
         private const val TACHOMETER_SCALE_LONGS_STEP = 3
         private const val TACHOMETER_SCALE_COUNT = 16
+        private const val TACHOMETER_SCALE_COLORED_COUNT = 7
         private const val TACHOMETER_LEGENDS_COUNT = 8
     }
 

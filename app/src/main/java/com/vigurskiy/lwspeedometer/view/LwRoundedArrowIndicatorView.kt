@@ -26,12 +26,16 @@ abstract class LwRoundedArrowIndicatorView
 
     var currentValue: Float = 0f
         set(value) {
-            arrowAnimator.cancel()
-            arrowAnimator.setFloatValues(
-                currentInterpolatedValue lowPassFilter value,
-                value
-            )
-            arrowAnimator.start()
+            arrowAnimator.apply {
+                val from = if (animatedFraction < ARROW_ANIMATED_FRACTION_THRESHOLD)
+                    currentInterpolatedValue lowPassFilter value
+                else
+                    currentInterpolatedValue
+
+                cancel()
+                setFloatValues(from, value)
+                start()
+            }
         }
 
     protected abstract val indicatorArcAngle: Float
@@ -55,7 +59,7 @@ abstract class LwRoundedArrowIndicatorView
 
     private val arrowAnimator = ValueAnimator().also {
         it.interpolator = LinearInterpolator()
-        it.duration = INDICATOR_FULL_INTERPOLATION_DURATION
+        it.duration = ARROW_FULL_INTERPOLATION_DURATION
         it.addUpdateListener { animation ->
             currentInterpolatedValue = animation.animatedValue as Float
             invalidate()
@@ -134,9 +138,9 @@ abstract class LwRoundedArrowIndicatorView
         scaleLongsRedPaint.style = Paint.Style.STROKE
         scaleLongsRedPaint.isAntiAlias = true
 
-        legendPaint.textSize = SPEEDOMETER_LEGEND_TEXT_SIZE
+        legendPaint.textSize = LEGEND_TEXT_SIZE
         legendPaint.typeface = legendTypeface
-        legendPaint.setShadowLayer(5f, 0f, 0f, Color.RED)
+        legendPaint.setShadowLayer(LEGEND_PAINT_SHADOW_RADIUS, 0f, 0f, Color.RED)
         legendPaint.color = Color.WHITE
         legendPaint.isAntiAlias = true
     }
@@ -280,8 +284,8 @@ abstract class LwRoundedArrowIndicatorView
                 -OVAL_STROKE_WIDTH
             ),
             RectF(ovalRect).resize(
-                -(OVAL_STROKE_WIDTH + SCALE_LONGS_STROKE_WIDTH / 4),
-                -(OVAL_STROKE_WIDTH + SCALE_LONGS_STROKE_WIDTH / 4)
+                -(OVAL_STROKE_WIDTH + SCALE_LONGS_STROKE_WIDTH_QUARTER),
+                -(OVAL_STROKE_WIDTH + SCALE_LONGS_STROKE_WIDTH_QUARTER)
             )
         )
 
@@ -385,14 +389,14 @@ abstract class LwRoundedArrowIndicatorView
             val centerY = drawArea.centerY()
 
             val radius = drawArea.width() / 2
-            val arrowBias = radius * 0.2f
+            val arrowBias = radius * ARROW_BIAS_COEFFICIENT
 
-            moveTo(centerX - SPEEDOMETER_ARROW_WIDTH, centerY + arrowBias)
+            moveTo(centerX - ARROW_WIDTH, centerY + arrowBias)
             lineTo(
                 centerX,
                 drawArea.centerY() - radius + OVAL_STROKE_WIDTH + SCALE_SHORTS_STROKE_WIDTH
             )
-            lineTo(centerX + SPEEDOMETER_ARROW_WIDTH, centerY + arrowBias)
+            lineTo(centerX + ARROW_WIDTH, centerY + arrowBias)
 
             return@with this
         }
@@ -411,7 +415,7 @@ abstract class LwRoundedArrowIndicatorView
     }
 
     private infix fun Float.lowPassFilter(newValue: Float): Float =
-        this + (newValue - this)/ LOWPASS_FILTER_COEFFICIENT
+        this + (newValue - this)/ ARROW_LOWPASS_FILTER_COEFFICIENT
 
     protected sealed class ScaleDecorationStrategyCommand {
         object ShortWhiteScale : ScaleDecorationStrategyCommand()
@@ -450,19 +454,22 @@ abstract class LwRoundedArrowIndicatorView
 
         private const val INDICATOR_SCALE_WIDTH = 1f
 
-        private const val INDICATOR_FULL_INTERPOLATION_DURATION = 1_000L
-        private const val LOWPASS_FILTER_COEFFICIENT = 50
+        private const val ARROW_FULL_INTERPOLATION_DURATION = 300L
+        private const val ARROW_ANIMATED_FRACTION_THRESHOLD = 0.1f
+        private const val ARROW_LOWPASS_FILTER_COEFFICIENT = 50
+        private const val ARROW_WIDTH = 30f
+        private const val ARROW_BIAS_COEFFICIENT = 0.2f
 
         private const val INDICATOR_ARROW_COLOR = Color.GREEN
+        private const val LEGEND_PAINT_SHADOW_RADIUS = 5f
         private const val SPEEDOMETER_LEGEND_TEXT_OFFSET = 50f
-        private const val SPEEDOMETER_LEGEND_TEXT_SIZE = 50f
-
-        private const val SPEEDOMETER_ARROW_WIDTH = 30f
+        private const val LEGEND_TEXT_SIZE = 50f
 
         private const val OVAL_STROKE_WIDTH = 25f
         private const val INDICATOR_STROKE_WIDTH = 1f
         private const val SCALE_SHORTS_STROKE_WIDTH = 25f
         private const val SCALE_LONGS_STROKE_WIDTH = 50f
+        private const val SCALE_LONGS_STROKE_WIDTH_QUARTER = SCALE_LONGS_STROKE_WIDTH / 4
 
         private const val PERIOD_180_DEGREE = 180f
         private const val PERIOD_90_DEGREE = 90f

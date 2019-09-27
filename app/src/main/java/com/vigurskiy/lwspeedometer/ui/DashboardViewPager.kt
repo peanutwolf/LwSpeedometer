@@ -28,8 +28,7 @@ constructor(context: Context, attrs: AttributeSet? = null) : ViewPager(context, 
         IndicatorPage(INDICATOR_TYPE_TACHOMETER, R.layout.page_tachometer)
     )
 
-    private val touchEventInterceptor =
-        ActionMoveTouchEventInterceptor(MOVE_POINTER_COUNT)
+    private val touchEventInterceptor = ActionMoveTouchEventInterceptor(MOVE_POINTER_COUNT)
     private val pageChangeListener = CircularViewPagerListener(this)
     private val pageAdapter = CircularViewPagerAdapter(
         context,
@@ -40,7 +39,7 @@ constructor(context: Context, attrs: AttributeSet? = null) : ViewPager(context, 
     private var visibleIndicatorType = INDICATOR_TYPE_SPEEDOMETER
 
     init {
-        offscreenPageLimit = 2
+        offscreenPageLimit = OFFSCREEN_PAGE_LIMIT
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean =
@@ -121,6 +120,7 @@ constructor(context: Context, attrs: AttributeSet? = null) : ViewPager(context, 
         private const val INDICATOR_TYPE_TACHOMETER = 1
 
         private const val MOVE_POINTER_COUNT = 2
+        private const val OFFSCREEN_PAGE_LIMIT = 2
     }
 }
 
