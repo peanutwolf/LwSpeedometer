@@ -8,7 +8,7 @@ import androidx.annotation.LayoutRes
 import androidx.core.view.children
 import androidx.viewpager.widget.ViewPager
 import com.vigurskiy.lwspeedometer.R
-import com.vigurskiy.lwspeedometer.util.motion.ActionMoveTouchEventInterceptor
+import com.vigurskiy.lwspeedometer.util.motion.CertainPointerTouchEventInterceptor
 import com.vigurskiy.lwspeedometer.util.viewpager.CircularViewPagerAdapter
 import com.vigurskiy.lwspeedometer.util.viewpager.CircularViewPagerListener
 import com.vigurskiy.lwspeedometer.util.viewpager.StackPageTransformer
@@ -28,12 +28,16 @@ constructor(context: Context, attrs: AttributeSet? = null) : ViewPager(context, 
         IndicatorPage(INDICATOR_TYPE_TACHOMETER, R.layout.page_tachometer)
     )
 
-    private val touchEventInterceptor = ActionMoveTouchEventInterceptor(MOVE_POINTER_COUNT)
+    private val touchEventInterceptor = CertainPointerTouchEventInterceptor(MOVE_POINTER_COUNT)
     private val pageChangeListener = CircularViewPagerListener(this)
     private val pageAdapter = CircularViewPagerAdapter(
         context,
         indicatorPageArray.map { it.resourceId }.toTypedArray()
     )
+
+    private val tagPageSpeedometer = context.getString(R.string.tag_page_speedometer)
+    private val tagPageTachometer = context.getString(R.string.tag_page_tachometer)
+    private val tagIndicator = context.getString(R.string.tag_indicator)
 
     @IndicatorTypeDef
     private var visibleIndicatorType = INDICATOR_TYPE_SPEEDOMETER
@@ -68,20 +72,16 @@ constructor(context: Context, attrs: AttributeSet? = null) : ViewPager(context, 
     private fun updateIndicatorValue(@IndicatorTypeDef indicatorType: Int, value: Float) {
 
         val pageTag = when (indicatorType) {
-            INDICATOR_TYPE_SPEEDOMETER -> context.getString(R.string.tag_page_speedometer)
-            INDICATOR_TYPE_TACHOMETER -> context.getString(R.string.tag_page_tachometer)
+            INDICATOR_TYPE_SPEEDOMETER -> tagPageSpeedometer
+            INDICATOR_TYPE_TACHOMETER -> tagPageTachometer
             else -> throw IllegalArgumentException("Unknown dashboard view type=[$indicatorType]")
         }
 
         // Since circular ViewPager implicitly swaps two uttermost pages
         // to avoid flickering we need to change values for all indicators with same types
         children.filter { child -> child.tag == pageTag }
-            .map { view ->
-                view.findViewWithTag<LwRoundedArrowIndicatorView>(context.getString(R.string.tag_indicator))
-            }
-            .forEach { indicator ->
-                indicator.currentValue = value
-            }
+            .map { view -> view.findViewWithTag<LwRoundedArrowIndicatorView>(tagIndicator) }
+            .forEach { indicator -> indicator.currentValue = value }
     }
 
     private fun onPageSelectedListener(selectedPage: Int) {

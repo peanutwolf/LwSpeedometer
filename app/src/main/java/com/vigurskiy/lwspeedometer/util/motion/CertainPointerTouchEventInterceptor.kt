@@ -2,7 +2,7 @@ package com.vigurskiy.lwspeedometer.util.motion
 
 import android.view.MotionEvent
 
-class ActionMoveTouchEventInterceptor(
+class CertainPointerTouchEventInterceptor(
     private val moveWithPointerCount: Int
 ) {
     private var movePointerCounter = 0
@@ -14,6 +14,9 @@ class ActionMoveTouchEventInterceptor(
                 movePointerCounter = 0
                 otherPointerCounter = 0
             }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                return false
+            }
             MotionEvent.ACTION_MOVE -> {
                 if (ev.pointerCount == moveWithPointerCount) movePointerCounter++
                 else otherPointerCounter++
@@ -21,8 +24,13 @@ class ActionMoveTouchEventInterceptor(
                 if (otherPointerCounter > movePointerCounter)
                     return false
             }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                return false
+            MotionEvent.ACTION_UP -> {
+                if (otherPointerCounter > movePointerCounter)
+                    ev.action = MotionEvent.ACTION_CANCEL
+            }
+            MotionEvent.ACTION_CANCEL ->{
+                movePointerCounter = 0
+                otherPointerCounter = 0
             }
         }
         return true
