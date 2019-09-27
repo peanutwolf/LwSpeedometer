@@ -4,8 +4,6 @@ import com.vigurskiy.speedometerdatasource.api.DataSourceService
 import com.vigurskiy.speedometerdatasource.api.OnDataChangeListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 class MainActivityPresenter(private val parentScope: CoroutineScope) : Presenter {
