@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicReference
 class MainActivityPresenter(private val parentScope: CoroutineScope) : Presenter {
 
     var indicatorView: IndicatorView? = null
+    set(value) {
+        field = value
+        dataChangeListener?.indicatorViewRef?.set(value)
+    }
 
     private var currentMaxValue = 0f
     private var dataSourceService: DataSourceService? = null
@@ -57,6 +61,5 @@ class MainActivityPresenter(private val parentScope: CoroutineScope) : Presenter
         fun updateIndicatorValue(value: Float)
 
     }
-
 
 }
