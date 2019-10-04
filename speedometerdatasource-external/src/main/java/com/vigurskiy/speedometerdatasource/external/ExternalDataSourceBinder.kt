@@ -6,8 +6,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
-import kotlin.math.PI
-import kotlin.math.sin
 
 
 class ExternalDataSourceBinder(
@@ -19,6 +17,8 @@ class ExternalDataSourceBinder(
     private val jobChangeMutex = Mutex()
 
     private var generationJob: Job? = null
+
+    private val generator = SequenceGenerator()
 
     override fun provideData(maxValue: Float, listener: OnDataChangeListener?) = runBlocking {
         jobChangeMutex.withLock {
@@ -32,23 +32,18 @@ class ExternalDataSourceBinder(
 
     private fun launchGeneration(maxValue: Float, listener: OnDataChangeListener): Job {
         return parentCoroutineScope.launch {
+            generator.setMaxValue(maxValue)
 
             logger.debug("[launchGeneration] Start launch generation: maxValue=[{}]", maxValue)
 
-            var radianX = 0f
-
             do {
 
-                radianX += GENERATION_STEP
-                val sinFunctionValue = (sin(2 * PI * radianX / GENERATION_SIN_KOEFF1) +
-                            sin(PI * radianX / GENERATION_SIN_KOEFF2)) / 2
+                val value = generator.getNextValue()
 
-                val result = maxValue * sinFunctionValue.toFloat()
-
-                if (result < 0)
+                if (value < 0)
                     continue
 
-                listener.onDataChange(result)
+                listener.onDataChange(value)
 
                 delay(GENERATION_DELAY)
 
@@ -60,10 +55,7 @@ class ExternalDataSourceBinder(
     }
 
     companion object {
-        private const val GENERATION_STEP = 10f
         private const val GENERATION_DELAY = 100L
-        private const val GENERATION_SIN_KOEFF1 = 500
-        private const val GENERATION_SIN_KOEFF2 = 300
     }
 
 }
